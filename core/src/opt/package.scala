@@ -6,6 +6,8 @@ package object opt {
 
   type Opt[+A] = Opt.Type[A]
 
+  case class OuterOpt[+A](a: A)
+
   object Opt {
 
     type Base
@@ -15,15 +17,16 @@ package object opt {
     private[opt] class UnapplyOptOps[A](val optA: Opt[A]) extends AnyVal {
       @inline def isEmpty: Boolean = optA.isEmpty
       // this is guaranteed to be safe by compiler, pattern matches always call isEmpty first
-      @inline def get: A           = Opt unwrap optA
+      @inline def get: A = Opt unwrap optA
     }
 
-    @inline def apply[A](value: A): Type[A]                = value.asInstanceOf[Type[A]]
-    @inline def unapply[A](optA: Opt[A]): UnapplyOptOps[A] = new UnapplyOptOps[A](optA)
-    @inline def empty[A]: Type[A]                          = None.asInstanceOf[Type[A]]
+//    @inline def apply[A](value: A)(implicit ev: A <:< Opt[_]): Type[A] = OuterOpt(value).asInstanceOf[Type[A]]
+    @inline def apply[A](value: A): Type[A]                            = value.asInstanceOf[Type[A]]
+    @inline def unapply[A](optA: Opt[A]): UnapplyOptOps[A]             = new UnapplyOptOps[A](optA)
+    @inline def empty[A]: Type[A]                                      = None.asInstanceOf[Type[A]]
 
     // unsafe
-    private[opt] def unwrap[A](value: Type[A]): A          = value.asInstanceOf[A]
+    private[opt] def unwrap[A](value: Type[A]): A = value.asInstanceOf[A]
   }
 
   object compat {
