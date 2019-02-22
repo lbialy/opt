@@ -1,10 +1,18 @@
 import scala.language.higherKinds
+import scala.annotation._
 
 package object opt {
 
   import compat._
 
   type Opt[+A] = Opt.Type[A]
+
+  trait NotOpt[+A]
+
+  implicit def neq[A]: NotOpt[A] = null.asInstanceOf[NotOpt[A]]
+  @implicitAmbiguous("You can't store Opt inside of an Opt!")
+  implicit def neqAmbig1[A]: NotOpt[Opt[A]] = ???
+  implicit def neqAmbig2[A]: NotOpt[Opt[A]] = ???
 
   case class OuterOpt[+A](a: A)
 
@@ -20,10 +28,10 @@ package object opt {
       @inline def get: A = Opt unwrap optA
     }
 
-//    @inline def apply[A](value: A)(implicit ev: A <:< Opt[_]): Type[A] = OuterOpt(value).asInstanceOf[Type[A]]
-    @inline def apply[A](value: A): Type[A]                            = value.asInstanceOf[Type[A]]
-    @inline def unapply[A](optA: Opt[A]): UnapplyOptOps[A]             = new UnapplyOptOps[A](optA)
-    @inline def empty[A]: Type[A]                                      = None.asInstanceOf[Type[A]]
+//    @inline def apply[A, B](value: A)(implicit ev: A <:< Opt[B]): Type[A] = OuterOpt(value).asInstanceOf[Type[A]]
+    @inline def apply[A: NotOpt](value: A): Type[A]        = value.asInstanceOf[Type[A]]
+    @inline def unapply[A](optA: Opt[A]): UnapplyOptOps[A] = new UnapplyOptOps[A](optA)
+    @inline def empty[A]: Type[A]                          = None.asInstanceOf[Type[A]]
 
     // unsafe
     private[opt] def unwrap[A](value: Type[A]): A = value.asInstanceOf[A]
@@ -34,7 +42,7 @@ package object opt {
 
     val None: Opt[Nothing] = null.asInstanceOf[Opt[Nothing]]
     object Some {
-      @inline def apply[A](a: A): Opt[A]                     = Opt(a)
+      @inline def apply[A: NotOpt](a: A): Opt[A]             = Opt(a)
       @inline def unapply[A](optA: Opt[A]): UnapplyOptOps[A] = new UnapplyOptOps[A](optA)
     }
   }
